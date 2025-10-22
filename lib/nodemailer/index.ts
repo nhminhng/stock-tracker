@@ -14,7 +14,7 @@ export const sendWelcomeEmail = async ({email, name, intro}:WelcomeEmailData) =>
         .replace('{{intro}}', intro);
 
     const mailOptions = {
-        from: 'Stock-tracker <minhvnh93a@gmail.com>',
+        from: `Stock-tracker <${process.env.NODEMAILER_EMAIL}>`,
         to: email,
         subject: 'Welcome to Stock-tracker -your stock market tools',
         text: 'Thank for joining Stock tracker',
