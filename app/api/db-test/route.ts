@@ -7,6 +7,10 @@ export async function GET() {
   try {
     await connectToDatabase();
 
+    if (!mongoose.connection.db) {
+      throw new Error('Database not connected');
+    }
+
     // Perform a lightweight ping to verify DB is reachable
     const admin = mongoose.connection.db.admin();
     const pingResult = await admin.ping();
