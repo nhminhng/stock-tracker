@@ -1,9 +1,6 @@
 "use client";
 import React, { useMemo, useState } from "react";
-
-// Minimal WatchlistButton implementation to satisfy page requirements.
-// This component focuses on UI contract only. It toggles local state and
-// calls onWatchlistChange if provided. Styling hooks match globals.css.
+import { addToWatchlist, removeFromWatchlist } from "@/lib/actions/watchlist.actions";
 
 const WatchlistButton = ({
                              symbol,
@@ -14,16 +11,31 @@ const WatchlistButton = ({
                              onWatchlistChange,
                          }: WatchlistButtonProps) => {
     const [added, setAdded] = useState<boolean>(!!isInWatchlist);
+    const [busy, setBusy] = useState<boolean>(false);
 
     const label = useMemo(() => {
-        if (type === "icon") return added ? "" : "";
+        if (type === "icon") return "";
         return added ? "Remove from Watchlist" : "Add to Watchlist";
     }, [added, type]);
 
-    const handleClick = () => {
+    const handleClick = async () => {
+        if (busy) return;
         const next = !added;
         setAdded(next);
+        setBusy(true);
         onWatchlistChange?.(symbol, next);
+        try {
+            const res = next
+                ? await addToWatchlist(symbol, company)
+                : await removeFromWatchlist(symbol);
+            if (!res?.success) throw new Error(res?.error || "watchlist update failed");
+        } catch (e) {
+            setAdded(!next);
+            onWatchlistChange?.(symbol, !next);
+            console.error("Watchlist update error", e);
+        } finally {
+            setBusy(false);
+        }
     };
 
     if (type === "icon") {
@@ -33,6 +45,7 @@ const WatchlistButton = ({
                 aria-label={added ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
                 className={`watchlist-icon-btn ${added ? "watchlist-icon-added" : ""}`}
                 onClick={handleClick}
+                disabled={busy}
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -53,7 +66,7 @@ const WatchlistButton = ({
     }
 
     return (
-        <button className={`watchlist-btn ${added ? "watchlist-remove" : ""}`} onClick={handleClick}>
+        <button className={`watchlist-btn ${added ? "watchlist-remove" : ""}`} onClick={handleClick} disabled={busy}>
             {showTrashIcon && added ? (
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
